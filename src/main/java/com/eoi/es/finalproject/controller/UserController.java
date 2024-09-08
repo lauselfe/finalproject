@@ -19,8 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.eoi.es.finalproject.dto.UserDto;
 import com.eoi.es.finalproject.service.UserServiceImpl;
 
-
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 @RequestMapping("/marketplace/usuarios")

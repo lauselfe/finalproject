@@ -30,7 +30,10 @@ public class Product {
 	private Integer stock; 
 	@Column 
 	private Double price; 
+	@Column
+	private Integer sales; 
 	@OneToMany(mappedBy = "product")
     private List<OrderItem> orderItems = new ArrayList<>();
+	
 	
 }

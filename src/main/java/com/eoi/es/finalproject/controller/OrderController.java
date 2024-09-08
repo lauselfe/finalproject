@@ -21,7 +21,7 @@ import com.eoi.es.finalproject.dto.CreateOrderDto;
 import com.eoi.es.finalproject.dto.OrderDto;
 import com.eoi.es.finalproject.service.OrderServiceImpl;
 
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 @RequestMapping("/marketplace/pedidos")
@@ -31,14 +31,14 @@ public class OrderController {
 	OrderServiceImpl orderService; 
 	
 	@GetMapping(value = "/{id}")
-	public ResponseEntity<OrderDto> findById(@RequestParam String id) {	
+	public ResponseEntity<OrderDto> findById(@PathVariable String id) {	
 		Integer orderId = Integer.parseInt(id);
 		return new ResponseEntity<OrderDto>(orderService.findOrdersById(orderId),HttpStatus.OK);
 		
 	}
 	
 	@GetMapping(value="/{nombreparcial}/nombre")
-	public ResponseEntity<List<OrderDto>> findByPartialName(@RequestParam String nombreparcial){
+	public ResponseEntity<List<OrderDto>> findByPartialName(@PathVariable String nombreparcial){
 		return new ResponseEntity<List<OrderDto>>(orderService.findOrderByPartialName(nombreparcial), HttpStatus.OK); 
 	}
 	
@@ -65,7 +65,7 @@ public class OrderController {
 	public ResponseEntity<?> update(@RequestBody OrderDto order, @PathVariable Integer id,BindingResult result) {
 
 		
-		if(id.equals(order.getId())||result.hasErrors()) {
+		if(!id.equals(order.getId())||result.hasErrors()) {
 			System.out.println("hay campos incorrectos");
 			System.out.println("errores: " + result.getAllErrors());		
 			

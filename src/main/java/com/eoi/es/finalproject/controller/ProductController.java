@@ -20,7 +20,7 @@ import com.eoi.es.finalproject.dto.ProductDto;
 
 import com.eoi.es.finalproject.service.ProductServiceImpl;
 
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import org.springframework.web.bind.annotation.RequestBody;
 
 
 @RestController

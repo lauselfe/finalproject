@@ -16,6 +16,6 @@ public interface ProductsRepository extends JpaRepository<Product, Integer>{
 	
 	List<Product> findByNameContainingIgnoreCase(String partialName);
 	
-	
+	List<Product> findTop5ByOrderBySalesDesc();
 
 }
