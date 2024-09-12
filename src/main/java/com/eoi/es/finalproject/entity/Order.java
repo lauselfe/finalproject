@@ -13,6 +13,11 @@ import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
+import com.eoi.es.finalproject.dto.OrderDto;
+import com.eoi.es.finalproject.dto.OrderItemDto;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -20,6 +25,7 @@ import lombok.Setter;
 @Table( name = "orders")
 @Getter
 @Setter
+
 public class Order {
 
 	@Id

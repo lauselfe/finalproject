@@ -10,6 +10,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,10 +25,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-
+import org.springframework.http.MediaType;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -43,6 +46,11 @@ import com.eoi.es.finalproject.repository.OrdersRepository;
 import com.eoi.es.finalproject.repository.ProductsRepository;
 import com.eoi.es.finalproject.repository.UsersRepository;
 import com.eoi.es.finalproject.service.OrderService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -57,6 +65,7 @@ public class OrderControllerTest {
     @Autowired
     private ProductsRepository productsRepository; 
     
+    @Mock
     @Autowired
     private OrdersRepository ordersRepository; 
 
@@ -68,7 +77,7 @@ public class OrderControllerTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        //MockitoAnnotations.openMocks(this);
     }
 
     @Test
@@ -158,27 +167,50 @@ public class OrderControllerTest {
     }
     
     @Test
-    void createOrder_ValidInput_ShouldReturnCreated() throws Exception{
-    	Order order = setupOrder(); 
-    	 CreateOrderDto orderDto = CreateOrderDto.builder()
-                 .id(order.getId())
-                 .name(order.getName())
-                 .date(order.getDate())
-                 .userId(order.getUserId())
-                 .orderItems(order.getOrderItems().stream()
-                         .map(orderItem -> new OrderItemDto(orderItem.getId(), orderItem.getQuantity())) 
-                         .collect(Collectors.toList()))
-                 .build();
-    	 
-    	//  when(orderService.createOrder(any(CreateOrderDto.class))).thenReturn(orderDto);
-    	  
-    	  
-    	  mockMvc.perform(post("/marketplace/pedidos"))
-          .andExpect(status().isOk()); 
-         
-    	  
+    void createOrder_ValidInput_ShouldReturnCreated() throws Exception {
+        // Preparar datos de entrada
+        CreateOrderDto createOrderDto = CreateOrderDto.builder()
+                .name("Test Order")
+                .date(LocalDate.now())
+                .userId(1)
+                .orderItems(Collections.emptyList())
+                .build();
 
+        // Crear el OrderDto con un ID generado manualmente
+        OrderDto orderDto = OrderDto.builder()
+                .id(100)  // ID simulado
+                .name("Test Order")
+                .date(LocalDate.now())
+                .orderItems(Collections.emptyList())
+                .build();
+
+        // Crear una entidad Order simulada con ID en el DTO
+        Order order = new Order();
+        order.setId(100);  // ID simulado para la prueba
+        order.setName(orderDto.getName());
+        order.setDate(orderDto.getDate());
+        order.setUserId(1);
+        order.setOrderItems(Collections.emptyList());
+
+        // Configurar los mocks
+        Mockito.when(orderService.createOrder(any(CreateOrderDto.class))).thenReturn(orderDto);
+        Mockito.when(ordersRepository.save(any(Order.class))).thenReturn(order);
+
+        // Ejecutar la petición
+        mockMvc.perform(post("/marketplace/pedidos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(createOrderDto)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(orderDto.getId()))  // Espera que el ID sea 100
+                .andExpect(jsonPath("$.nombre").value(orderDto.getName()));
+
+        // Verifica que el repositorio está recibiendo el objeto correcto
+        Mockito.verify(ordersRepository).save(Mockito.argThat(arg -> {
+            assertNotNull(arg, "Order entity should not be null");
+            return arg.getId() == 100 && arg.getName().equals("Test Order");
+        }));
     }
+
     
     
     private Order setupOrder() {
@@ -216,6 +248,18 @@ public class OrderControllerTest {
         order.setOrderItems(Arrays.asList(orderItem1, orderItem2));
 
         return ordersRepository.save(order);
+    }
+    
+    private static String asJsonString(final Object obj) {
+    	try {
+            ObjectMapper mapper = new ObjectMapper();
+            // Registrar el módulo para manejar fechas Java 8 (como LocalDate)
+            mapper.registerModule(new JavaTimeModule());
+            mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS); // Opcional: para evitar serializar fechas como timestamps
+            return mapper.writeValueAsString(obj);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

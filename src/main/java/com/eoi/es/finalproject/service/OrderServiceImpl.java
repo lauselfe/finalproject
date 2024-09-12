@@ -247,16 +247,19 @@ public class OrderServiceImpl implements OrderService {
         order.setDate(dto.getDate());
         order.setUserId(dto.getUserId());
         
-        User user = findOrderUser(dto.getUserId());
+       
 
         List<OrderItem> orderItems = createOrderItems(dto.getOrderItems(), order);
         
         order.setTotal(calculateOrderTotal(orderItems)); 
         order.setOrderItems(orderItems);
-
-        user.setMoneyExpended(user.getMoneyExpended() + calculateOrderTotal(orderItems));
-        usersRepository.save(user);
-        
+        if(dto.getUserId() != null) {
+      	  User user = findOrderUser(dto.getUserId());
+          user.setMoneyExpended(user.getMoneyExpended() + calculateOrderTotal(orderItems));
+          usersRepository.save(user);
+          
+        }
+  
         Order savedOrder = ordersRepository.save(order);
     	
     	return savedOrder;
