@@ -3,8 +3,6 @@ package com.eoi.es.finalproject.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,23 +38,11 @@ public class OrderServiceImpl implements OrderService {
     
     @Override
     public OrderDto findOrdersById(Integer id) {
-        // Obtener la entidad Order desde la base de datos
-        Order entity = ordersRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Order not found"));
-
-        // Convertir Order a OrderDto
-        OrderDto dto = new OrderDto();
-        dto.setId(entity.getId());
-        dto.setName(entity.getName());
-        dto.setDate(entity.getDate());
-
-        // Convertir OrderItems a OrderItemDto
-        List<OrderItemDto> orderItemDtos = entity.getOrderItems().stream()
-            .map(orderItem -> new OrderItemDto(orderItem.getProduct().getId(), orderItem.getQuantity()))
-            .collect(Collectors.toList());
-
-        dto.setOrderItems(orderItemDtos);
-
+    	
+        Order entity = findExistingOrder(id); 
+        
+        OrderDto dto = convertOrderToDto(entity); 
+    
         return dto;
     }
 
@@ -70,79 +56,28 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public void deleteOrderById(Integer id) {
+    	
         ordersRepository.deleteById(id);
     }
 
     @Override
     public OrderDto createOrder(CreateOrderDto dto) {
-        // Crear una nueva instancia de Order
-        Order order = new Order();
-        order.setName(dto.getName());
-        order.setDate(dto.getDate());
-        order.setUserId(dto.getUserId());
-        
-        // Obtener el usuario asociado al pedido
-        User user = usersRepository.findById(dto.getUserId())
-            .orElseThrow(() -> new RuntimeException("User not found"));
-
-        // Inicializar el total del pedido
-        double total = 0.0;
-
-        // Convertir List<OrderItemDto> a List<OrderItem>
-        List<OrderItem> orderItems = new ArrayList<>();
-        for (OrderItemDto orderItemDto : dto.getOrderItems()) {
-            OrderItem orderItem = new OrderItem();
-            Product product = productsRepository.findById(orderItemDto.getProductId())
-                .orElseThrow(() -> new RuntimeException("Product not found"));
-
-            int quantity = orderItemDto.getQuantity();
-
-            // Verificar el stock del producto
-            if (product.getStock() < quantity) {
-                quantity = product.getStock(); // Ajustar la cantidad a la cantidad disponible
-            }
-
-            // Actualizar stock y ventas del producto
-            product.setStock(product.getStock() - quantity);
-            product.setSales(product.getSales() + quantity);
-
-            // Establecer el OrderItem
-            orderItem.setProduct(product);
-            orderItem.setQuantity(quantity);
-            orderItem.setOrder(order);
-
-            // Agregar a la lista de OrderItems
-            orderItems.add(orderItem);
-
-            // Calcular el total del pedido
-            total += product.getPrice() * quantity;
-        }
-
-        // Establecer la lista de OrderItems en la Order
-        order.setOrderItems(orderItems);
-        order.setTotal(total);
-
-        // Actualizar el dinero gastado por el usuario
-        user.setMoneyExpended(user.getMoneyExpended() + total);
-
-        // Guardar el usuario y la orden
-        usersRepository.save(user);
-        Order savedOrder = ordersRepository.save(order);
-
-        // Convertir la Order guardada a OrderDto y devolver
+    	
+    	Order savedOrder = saveNewOrder(dto); 
         return convertOrderToDto(savedOrder);
     }
 
 
     @Override
     public OrderDto updateOrder(OrderDto dto) {
+    	
         Order existingOrder = findExistingOrder(dto.getId());
         User user = findOrderUser(existingOrder.getUserId());
 
         double oldTotal = existingOrder.getTotal();
         updateOrderDetails(existingOrder, dto);
 
-        List<OrderItem> updatedOrderItems = processOrderItems(dto, existingOrder);  // Pasar la orden existente
+        List<OrderItem> updatedOrderItems = processOrderItems(dto, existingOrder);  
         double newTotal = calculateOrderTotal(updatedOrderItems);
 
         updateOrderItems(existingOrder, updatedOrderItems);
@@ -152,19 +87,17 @@ public class OrderServiceImpl implements OrderService {
         Order updatedOrder = ordersRepository.save(existingOrder);
 
         return convertOrderToDto(updatedOrder);
+        
     }
 
     // Encuentra una orden existente por ID
     private Order findExistingOrder(Integer orderId) {
+    	
         return ordersRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
     }
 
-    // Encuentra el usuario de la orden
-    private User findOrderUser(Integer userId) {
-        return usersRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
-    }
+  
 
     // Actualiza los detalles de la orden (nombre, fecha)
     private void updateOrderDetails(Order existingOrder, OrderDto dto) {
@@ -180,7 +113,7 @@ public class OrderServiceImpl implements OrderService {
             Product product = findProduct(orderItemDto.getProductId());
             int newQuantity = orderItemDto.getQuantity();
 
-            // Pasa la orden existente al actualizar o crear un OrderItem
+       
             OrderItem updatedItem = updateOrCreateOrderItem(existingOrderItemsMap, product, newQuantity, existingOrder);
             updatedOrderItems.add(updatedItem);
         }
@@ -204,7 +137,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         // Aquí se establece la relación entre OrderItem y Order
-        orderItem.setOrder(existingOrder);  // Es importante asociar cada OrderItem con su Order
+        orderItem.setOrder(existingOrder);  
         return orderItem;
     }
 
@@ -232,7 +165,7 @@ public class OrderServiceImpl implements OrderService {
             product.setStock(product.getStock() - adjustedQuantity);
             product.setSales(product.getSales() + adjustedQuantity);
         } else {
-            product.setStock(product.getStock() - quantityDifference); // Agrega el stock si se ha reducido la cantidad
+            product.setStock(product.getStock() - quantityDifference); 
             product.setSales(product.getSales() + quantityDifference);
         }
     }
@@ -248,7 +181,7 @@ public class OrderServiceImpl implements OrderService {
         orderItem.setQuantity(adjustedQuantity);
         orderItem.setProduct(product);
 
-        // Nota: La asociación con la entidad 'Order' se hará en el método que llama a esta función
+      
         return orderItem;
     }
 
@@ -285,9 +218,6 @@ public class OrderServiceImpl implements OrderService {
     }
 
 
-
-
-
     private OrderDto convertOrderToDto(Order order) {
     	 // Convertir la lista de OrderItems de la entidad Order a OrderItemDto
         List<OrderItemDto> orderItemDtos = order.getOrderItems().stream().map(item -> {
@@ -297,7 +227,7 @@ public class OrderServiceImpl implements OrderService {
                 .build();
         }).collect(Collectors.toList());
 
-        // Crear el OrderDto con los datos de la entidad Order
+     
         return OrderDto.builder()
             .id(order.getId())
             .name(order.getName())
@@ -305,4 +235,58 @@ public class OrderServiceImpl implements OrderService {
             .orderItems(orderItemDtos)
             .build();
     }
+    
+ 
+    private User findOrderUser(Integer userId) {
+        return usersRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+    }
+    private Order saveNewOrder(CreateOrderDto dto) {
+    	Order order = new Order();
+        order.setName(dto.getName());
+        order.setDate(dto.getDate());
+        order.setUserId(dto.getUserId());
+        
+        User user = findOrderUser(dto.getUserId());
+
+        List<OrderItem> orderItems = createOrderItems(dto.getOrderItems(), order);
+        
+        order.setTotal(calculateOrderTotal(orderItems)); 
+        order.setOrderItems(orderItems);
+
+        user.setMoneyExpended(user.getMoneyExpended() + calculateOrderTotal(orderItems));
+        usersRepository.save(user);
+        
+        Order savedOrder = ordersRepository.save(order);
+    	
+    	return savedOrder;
+    	
+    }
+
+	private List<OrderItem> createOrderItems(List<OrderItemDto> orderItemsDto, Order order) {
+		List<OrderItem> orderItems = new ArrayList<>(); 
+		for (OrderItemDto orderItemDto : orderItemsDto) {
+        	
+            OrderItem orderItem = new OrderItem();
+            Product product = findProduct(orderItemDto.getProductId());
+            int quantity = orderItemDto.getQuantity();
+
+            updateProductStockSales(product, quantity); 
+            orderItem.setProduct(product);
+            orderItem.setQuantity(quantity);
+            orderItem.setOrder(order);
+            orderItems.add(orderItem);         
+        }
+		
+		return orderItems;
+	}
+	
+	private void updateProductStockSales(Product product, int sales) {
+		 if (product.getStock() < sales) {
+             sales = product.getStock(); 
+         }
+         product.setStock(product.getStock() - sales);
+         product.setSales(product.getSales() + sales);
+
+	}
 }

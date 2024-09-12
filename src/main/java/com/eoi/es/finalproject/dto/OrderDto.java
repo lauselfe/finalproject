@@ -5,7 +5,6 @@ import java.util.List;
 
 import javax.validation.constraints.NotNull;
 
-import com.eoi.es.finalproject.entity.Order;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.AllArgsConstructor;
@@ -36,6 +35,8 @@ public class OrderDto {
 	
 	@JsonProperty(value = "articulos")
 	private List<OrderItemDto> orderItems;
+
+	
 
 	
 }
