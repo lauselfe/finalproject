@@ -11,7 +11,7 @@ public interface ProductService {
 	
 	public ProductDto findProductById(Integer id); 
 	
-	public void createProduct(ProductDto dto); 
+	public ProductDto createProduct(ProductDto dto); 
 	
 	public ProductDto updateProduct(ProductDto dto); 
 

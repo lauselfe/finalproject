@@ -8,86 +8,96 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.eoi.es.finalproject.dto.ProductDto;
-import com.eoi.es.finalproject.dto.UserDto;
 import com.eoi.es.finalproject.entity.Product;
-import com.eoi.es.finalproject.entity.User;
 import com.eoi.es.finalproject.repository.ProductsRepository;
 
 
-
 @Service
-public class ProductServiceImpl implements ProductService{
+public class ProductServiceImpl implements ProductService {
 
 	@Autowired
-	ProductsRepository productsRepository; 
-	
+	ProductsRepository productsRepository;
+
 	@Override
 	public List<ProductDto> findProductsByPartialName(String partialName) {
-		// TODO Auto-generated method stub
-		List<ProductDto> dtos= new ArrayList<ProductDto>();		
-		List<Product> entities= productsRepository.findByNameContainingIgnoreCase(partialName);
-				
-		for (Product product : entities) {
-			ProductDto dto= new ProductDto();
-			dto.setId(product.getId());
-			dto.setName(product.getName());
-			dto.setStock(product.getStock());
-			dto.setPrice(product.getPrice());
-			
-			dtos.add(dto);
-		}
+
+		List<Product> entities = productsRepository.findByNameContainingIgnoreCase(partialName);
+		List<ProductDto> dtos = convertEntitiesToDtos(entities);
+
 		return dtos;
 	}
 
 	@Override
 	public ProductDto findProductById(Integer id) {
-		// TODO Auto-generated method stub
-		ProductDto dto= new ProductDto();		 
-		 Product entity = productsRepository.findById(Integer.valueOf(id)).get();
-	
-		 BeanUtils.copyProperties(entity,dto);		 
-		 
-		 return dto;
-	
+
+		Product entity = productsRepository.findById(id).orElse(new Product());
+		ProductDto dto = convertEntityToDto(entity);
+
+		return dto;
 	}
 
 	@Override
-	public void createProduct(ProductDto dto) {
-		// TODO Auto-generated method stub
-		Product entity= new Product();
-		entity.setName(dto.getName());
-		entity.setStock(dto.getStock());
-		entity.setPrice(dto.getPrice());
-		
+	public ProductDto createProduct(ProductDto dto) {
+
+		Product entity = convertDtoToNewEntity(dto);
 		productsRepository.save(entity);
-		
-		 
+		ProductDto resultDto = convertEntityToDto(entity); 
+		return resultDto; 
+
 	}
 
 	@Override
 	public ProductDto updateProduct(ProductDto dto) {
-		// TODO Auto-generated method stub
-		// Verificar si el usuario existe
-	    Product existingProduct = productsRepository.findById(dto.getId())
-	        .orElseThrow(() -> new RuntimeException("Product not found"));
 
-	    // Actualizar los campos del usuario
-	    existingProduct.setName(dto.getName());
-	    existingProduct.setPrice(dto.getPrice());
-	    existingProduct.setStock(dto.getStock());
+		Product existingProduct = productsRepository.findById(dto.getId())
+				.orElseThrow(() -> new RuntimeException("Product not found"));
+		existingProduct = convertDtoToEntity(dto);
+		Product updatedProduct = productsRepository.save(existingProduct);
+		ProductDto resultDto = convertEntityToDto(updatedProduct);
 
-	    // Guardar el usuario actualizado
-	    Product updatedProduct = productsRepository.save(existingProduct);
+		return resultDto;
 
-	    // Devolver el DTO actualizado
-	    ProductDto resultDto = new ProductDto();
-	    resultDto.setId(updatedProduct.getId());
-	    resultDto.setName(updatedProduct.getName());
-	    
+	}
 
-	    return resultDto;
-		
-		
+	private List<ProductDto> convertEntitiesToDtos(List<Product> entities) {
+		List<ProductDto> dtos = new ArrayList<ProductDto>();
+
+		for (Product entity : entities) {
+			ProductDto dto = new ProductDto();
+			BeanUtils.copyProperties(entity, dto);
+			dtos.add(dto);
+		}
+
+		return dtos;
+	}
+
+	private ProductDto convertEntityToDto(Product entity) {
+		ProductDto dto = new ProductDto();
+
+		BeanUtils.copyProperties(entity, dto);
+
+		return dto;
+
+	}
+
+	private Product convertDtoToEntity(ProductDto dto) {
+		Product entity = new Product();
+
+		BeanUtils.copyProperties(dto, entity);
+
+		return entity;
+
+	}
+	
+	private Product convertDtoToNewEntity(ProductDto dto) {
+		Product entity = new Product();
+
+		entity.setName(dto.getName());
+		entity.setPrice(dto.getPrice());
+		entity.setStock(dto.getStock());
+		entity.setSales(0);
+		return entity;
+
 	}
 
 }

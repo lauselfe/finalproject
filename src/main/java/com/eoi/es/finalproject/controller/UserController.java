@@ -1,9 +1,6 @@
 package com.eoi.es.finalproject.controller;
 
 import java.util.List;
-
-
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,10 +12,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.eoi.es.finalproject.dto.UserDto;
 import com.eoi.es.finalproject.service.UserServiceImpl;
-
 import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
@@ -26,60 +21,78 @@ import org.springframework.web.bind.annotation.RequestBody;
 public class UserController {
 
 	@Autowired
-	UserServiceImpl userService; 
-	
+	UserServiceImpl userService;
+
 	@GetMapping(value = "/{id}")
-	public ResponseEntity<UserDto> findById(@PathVariable String id) {	
-		
-		Integer userId = Integer.parseInt(id); 
-		return new ResponseEntity<UserDto>(userService.findUserById(userId),HttpStatus.OK);
-		
+	public ResponseEntity<UserDto> findById(@PathVariable String id) {
+
+		Integer userId = Integer.parseInt(id);
+		UserDto user = userService.findUserById(userId);
+		ResponseEntity<UserDto> response;
+
+		if (user.getId() != null) {
+			response = new ResponseEntity<UserDto>(user, HttpStatus.OK);
+		} else {
+			response = new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+
+		return response;
+
 	}
-	
+
 	@GetMapping
-	public ResponseEntity<List<UserDto>> findAllUsers() {	
-		
-		return new ResponseEntity<List<UserDto>>(userService.findAllUsers(), HttpStatus.OK);
-		
+	public ResponseEntity<List<UserDto>> findAllUsers() {
+		ResponseEntity<List<UserDto>> response;
+		List<UserDto> users = userService.findAllUsers();
+		if (users.isEmpty()) {
+			response = new ResponseEntity<List<UserDto>>(users, HttpStatus.NOT_FOUND);
+		} else {
+			response = new ResponseEntity<List<UserDto>>(users, HttpStatus.OK);
+		}
+		return response;
+
 	}
-	
+
 	@PostMapping
 	public ResponseEntity<UserDto> createUser(@RequestBody UserDto user, BindingResult result) {
-	    if (result.hasErrors()) {
-	        System.out.println("Hay campos incorrectos");
-	        System.out.println("Errores: " + result.getAllErrors());
-	        return new ResponseEntity<UserDto>(user, HttpStatus.BAD_REQUEST);
-	    } else {
-	        System.out.println("Datos recibidos: " + user);
-	        UserDto userDto = userService.createUser(user);
-	        return new ResponseEntity<UserDto>(userDto, HttpStatus.CREATED);
-	    }
-	
-		
-}
-	
-	
+
+		ResponseEntity<UserDto> response;
+		if (result.hasErrors()) {
+			System.out.println("Errores: " + result.getAllErrors());
+			response = new ResponseEntity<UserDto>(user, HttpStatus.BAD_REQUEST);
+		} else {
+			UserDto userDto = userService.createUser(user);
+			response = new ResponseEntity<UserDto>(userDto, HttpStatus.CREATED);
+		}
+
+		return response;
+
+	}
+
 	@PutMapping(value = "/{id}")
-	public ResponseEntity<?> updateUser(@RequestBody UserDto user, @PathVariable String id,BindingResult result) {
-
-		
-		if(id.equals(user.getId())||result.hasErrors()) {
-			System.out.println("hay campos incorrectos");
-			System.out.println("errores: " + result.getAllErrors());		
-			
-			return new ResponseEntity<UserDto>(HttpStatus.BAD_REQUEST);
-		}
-		else {
-
+	public ResponseEntity<?> updateUser(@RequestBody UserDto user, @PathVariable String id, BindingResult result) {
+		Integer userId = Integer.parseInt(id);
+		ResponseEntity<?> response;
+		if (!userId.equals(user.getId()) || result.hasErrors()) {
+			System.out.println("errores: " + result.getAllErrors());
+			response = new ResponseEntity<UserDto>(HttpStatus.BAD_REQUEST);
+		} else {
 			UserDto userDto = userService.updateUser(user);
-			return new ResponseEntity<UserDto>(userDto,HttpStatus.ACCEPTED);
+			response = new ResponseEntity<UserDto>(userDto, HttpStatus.ACCEPTED);
 		}
+		return response;
 	}
-	
+
 	@PostMapping(value = "/login")
-	public ResponseEntity<UserDto> userLogin(@RequestParam String name, @RequestParam String password){
-		UserDto user = userService.userLogin(name, password); 
-		return new ResponseEntity<UserDto>(user, HttpStatus.OK); 
+	public ResponseEntity<UserDto> userLogin(@RequestParam String name, @RequestParam String password) {
+		ResponseEntity<UserDto> response;
+		UserDto user = userService.userLogin(name, password);
+		if (user != null) {
+			response = new ResponseEntity<UserDto>(user, HttpStatus.OK);
+		} else {
+			response = new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+		}
+		return response;
 	}
-	
+
 }

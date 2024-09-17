@@ -13,95 +13,102 @@ import com.eoi.es.finalproject.repository.UsersRepository;
 
 
 @Service
-public class UserServiceImpl implements UserService{
+public class UserServiceImpl implements UserService {
 
 	@Autowired
-	UsersRepository usersRepository; 
+	UsersRepository usersRepository;
+
 	@Override
 	public List<UserDto> findAllUsers() {
-		List<UserDto> dtos= new ArrayList<UserDto>();		
-		List<User> entities=usersRepository.findAll();
-				
-		for (User user : entities) {
-			UserDto dto= new UserDto();
-			dto.setId(user.getId());
-			dto.setName(user.getName());
-			dto.setPassword(user.getPassword());
-			
-			dtos.add(dto);
-		}
-				
+		List<User> entities = usersRepository.findAll();
+		List<UserDto> dtos = convertEntitiesToDtos(entities);
+
 		return dtos;
 	}
 
 	@Override
 	public UserDto createUser(UserDto dto) {
 		if (usersRepository.existsByName(dto.getName())) {
-	        throw new RuntimeException("User with name " + dto.getName() + " already exists.");
-	    }
+			throw new RuntimeException("User with name " + dto.getName() + " already exists.");
+		}
 
-	    // Mapeo de UserDto a User
-	    User user = new User();
-	    user.setName(dto.getName());
-	    user.setPassword(dto.getPassword());
-
-	    // Guardar el usuario en la base de datos
-	    User savedUser = usersRepository.save(user);
-
-	    // Mapeo de User (guardado) a UserDto
-	    UserDto resultDto = new UserDto();
-	    resultDto.setId(savedUser.getId()); 
-	    resultDto.setName(savedUser.getName());
-	    resultDto.setPassword(savedUser.getPassword());
-
-	    return resultDto;
+		User user = convertDtoToEntityNewUser(dto);
+		User savedUser = usersRepository.save(user);
+		UserDto resultDto = convertEntityToDto(savedUser);
+		
+		return resultDto;
 	}
 
 	@Override
 	public UserDto findUserById(Integer id) {
-		 UserDto dto= new UserDto();		 
-		 User entity = usersRepository.findById(id).get();
-	
-		 BeanUtils.copyProperties(entity,dto);		 
-		 
-		 return dto;	
+
+		User entity = usersRepository.findById(id).orElse(new User());
+		UserDto dto = convertEntityToDto(entity);
+
+		return dto;
 	}
 
 	@Override
 	public UserDto updateUser(UserDto dto) {
-		// Verificar si el usuario existe
-	    User existingUser = usersRepository.findById(dto.getId())
-	        .orElseThrow(() -> new RuntimeException("User not found"));
 
-	    // Actualizar los campos del usuario
-	    existingUser.setName(dto.getName());
-	    existingUser.setPassword(dto.getPassword());
+		User existingUser = usersRepository.findById(dto.getId())
+				.orElseThrow(() -> new RuntimeException("User not found"));
 
-	    // Guardar el usuario actualizado
-	    User updatedUser = usersRepository.save(existingUser);
+		existingUser = convertDtoToEntity(dto);
+		User updatedUser = usersRepository.save(existingUser);
+		UserDto resultDto = convertEntityToDto(updatedUser);
 
-	    // Devolver el DTO actualizado
-	    UserDto resultDto = new UserDto();
-	    resultDto.setId(updatedUser.getId());
-	    resultDto.setName(updatedUser.getName());
-	    resultDto.setPassword(updatedUser.getPassword());
-
-	    return resultDto;
+		return resultDto;
 	}
 
 	@Override
 	public UserDto userLogin(String name, String password) {
-		// TODO Auto-generated method stub
-		UserDto dto = new UserDto(); 		
-		User entity=usersRepository.findByName(name);
-		
-		if( entity.getPassword().equals(password)) {
-			BeanUtils.copyProperties(entity,dto);
-			return dto; 
-		}else {
-			return null; 
+
+		User entity = usersRepository.findByName(name);
+		if (entity.getPassword().equals(password)) {
+			UserDto dto = convertEntityToDto(entity);
+			return dto;
+		} else {
+			return null;
 		}
-		
+
+	}
+
+	private List<UserDto> convertEntitiesToDtos(List<User> users) {
+		List<UserDto> dtos = new ArrayList<UserDto>();
+		for (User user : users) {
+			UserDto dto = new UserDto();
+			BeanUtils.copyProperties(user, dto);
+			dtos.add(dto);
+		}
+
+		return dtos;
+
+	}
+
+	private User convertDtoToEntity(UserDto dto) {
+
+		User user = new User();
+		BeanUtils.copyProperties(dto, user);
+
+		return user;
+	}
+	
+	private User convertDtoToEntityNewUser(UserDto dto) {
+
+		User user = new User();
+		user.setName(dto.getName());
+		user.setPassword(dto.getPassword());
+		user.setMoneyExpended(0.0);
+
+		return user;
+	}
+
+	private UserDto convertEntityToDto(User entity) {
+
+		UserDto dto = new UserDto();
+		BeanUtils.copyProperties(entity, dto);
+		return dto;
 	}
 
 }

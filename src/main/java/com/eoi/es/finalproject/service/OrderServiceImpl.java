@@ -136,26 +136,24 @@ public class OrderServiceImpl implements OrderService {
             orderItem = createNewOrderItem(product, newQuantity);
         }
 
-        // Aquí se establece la relación entre OrderItem y Order
+  
         orderItem.setOrder(existingOrder);  
         return orderItem;
     }
 
-    // Crea un mapa de los items existentes en la orden
+  
     private Map<Integer, OrderItem> mapExistingOrderItems(Order existingOrder) {
         return existingOrder.getOrderItems().stream()
                 .collect(Collectors.toMap(item -> item.getProduct().getId(), item -> item));
     }
 
-    // Encuentra el producto por ID
+ 
     private Product findProduct(Integer productId) {
         return productsRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
     }
 
 
-
-    // Ajusta el stock y ventas para un item existente
     private void adjustStockAndSalesForExistingItem(OrderItem existingOrderItem, Product product, int newQuantity) {
         int oldQuantity = existingOrderItem.getQuantity();
         int quantityDifference = newQuantity - oldQuantity;
@@ -170,7 +168,7 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
- // Crea un nuevo OrderItem
+ 
     private OrderItem createNewOrderItem(Product product, int quantity) {
         OrderItem orderItem = new OrderItem();
         int adjustedQuantity = Math.min(quantity, product.getStock());
@@ -185,7 +183,7 @@ public class OrderServiceImpl implements OrderService {
         return orderItem;
     }
 
-    // Maneja los OrderItems que ya no están en el nuevo pedido
+
     private void handleRemovedOrderItems(Map<Integer, OrderItem> existingItems, List<OrderItem> updatedItems) {
         for (OrderItem oldItem : existingItems.values()) {
             boolean itemStillExists = updatedItems.stream()
@@ -199,27 +197,27 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    // Calcula el total de la orden
+    
     private double calculateOrderTotal(List<OrderItem> updatedOrderItems) {
         return updatedOrderItems.stream()
                 .mapToDouble(item -> item.getProduct().getPrice() * item.getQuantity())
                 .sum();
     }
 
-    // Actualiza los items de la orden
+
     private void updateOrderItems(Order existingOrder, List<OrderItem> updatedOrderItems) {
         existingOrder.getOrderItems().clear();
         existingOrder.getOrderItems().addAll(updatedOrderItems);
     }
 
-    // Actualiza el total de dinero gastado del usuario
+   
     private void updateUserTotalSpent(User user, double oldTotal, double newTotal) {
         user.setMoneyExpended(user.getMoneyExpended() + (newTotal - oldTotal));
     }
 
 
     private OrderDto convertOrderToDto(Order order) {
-    	 // Convertir la lista de OrderItems de la entidad Order a OrderItemDto
+    
         List<OrderItemDto> orderItemDtos = order.getOrderItems().stream().map(item -> {
             return OrderItemDto.builder()
                 .productId(item.getProduct().getId()) 
@@ -241,6 +239,7 @@ public class OrderServiceImpl implements OrderService {
         return usersRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
     }
+    
     private Order saveNewOrder(CreateOrderDto dto) {
     	Order order = new Order();
         order.setName(dto.getName());

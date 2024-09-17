@@ -1,6 +1,7 @@
 package com.eoi.es.finalproject.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -17,5 +18,7 @@ public interface ProductsRepository extends JpaRepository<Product, Integer>{
 	List<Product> findByNameContainingIgnoreCase(String partialName);
 	
 	List<Product> findTop5ByOrderBySalesDesc();
+	
+	
 
 }

@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.eoi.es.finalproject.dto.ProductDto;
@@ -22,60 +21,75 @@ import com.eoi.es.finalproject.service.ProductServiceImpl;
 
 import org.springframework.web.bind.annotation.RequestBody;
 
-
 @RestController
 @RequestMapping("/marketplace/articulos")
 public class ProductController {
 
 	@Autowired
-	ProductServiceImpl productService; 
-	
+	ProductServiceImpl productService;
+
 	@GetMapping(value = "/{id}")
-	public ResponseEntity<ProductDto> findById(@RequestParam String id) {	
+	public ResponseEntity<ProductDto> findById(@PathVariable String id) {
 		Integer productId = Integer.parseInt(id);
-		return new ResponseEntity<ProductDto>(productService.findProductById(productId),HttpStatus.OK);
-		
+		ProductDto product = productService.findProductById(productId);
+		ResponseEntity<ProductDto> response;
+
+		if (product.getId() != null) {
+			response = new ResponseEntity<ProductDto>(product, HttpStatus.OK);
+		} else {
+			response = new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+
+		return response;
+
 	}
-	
+
 	@GetMapping(value = "/{nombreparcial}/nombre")
-	public ResponseEntity<List<ProductDto>> findByPartialName(@RequestParam String nombreparcial){
-		
-		List<ProductDto> products = productService.findProductsByPartialName(nombreparcial); 	
-		return new ResponseEntity<List<ProductDto>>(products, HttpStatus.OK);
-		
+	public ResponseEntity<List<ProductDto>> findByPartialName(@PathVariable String nombreparcial) {
+		ResponseEntity<List<ProductDto>> response;
+		if (nombreparcial == null || nombreparcial.trim().isEmpty()) {
+			response = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+		}
+		List<ProductDto> products = productService.findProductsByPartialName(nombreparcial);
+		response = new ResponseEntity<List<ProductDto>>(products, HttpStatus.OK);
+
+		return response;
+
 	}
-	
+
 	@PostMapping
-	public ResponseEntity<?> createProduct(@RequestBody @Valid ProductDto product, BindingResult result){
-		if(result.hasErrors()) {
-			System.out.println("hay campos incorrectos");
-			System.out.println("errores: " + result.getAllErrors());		
-			
-			return new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
-		}
-		else {
+	public ResponseEntity<?> create(@RequestBody @Valid ProductDto product, BindingResult result) {
+		ResponseEntity<?> response;
 
-			productService.createProduct(product);
-			return new ResponseEntity<ProductDto>(product, HttpStatus.CREATED);
+		if (result.hasErrors()) {
+			System.out.println("errores: " + result.getAllErrors());
+			response = new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
+		} else {
+			ProductDto dto = productService.createProduct(product);
+			response = new ResponseEntity<ProductDto>(dto, HttpStatus.CREATED);
 		}
-		
+		return response;
+
 	}
-	
-	@PutMapping(value = "/{id}")
-	public ResponseEntity<?> update(@RequestBody ProductDto product, @PathVariable String id,BindingResult result) {
 
+	@PutMapping(value = "/{id}")
+	public ResponseEntity<?> update(@RequestBody @Valid ProductDto product, @PathVariable String id,
+			BindingResult result) {
+
+		ResponseEntity<?> response;
 		Integer productId = Integer.parseInt(id);
-		if(!productId.equals(product.getId())||result.hasErrors()) {
-			System.out.println("hay campos incorrectos");
-			System.out.println("errores: " + result.getAllErrors());		
-			
-			return new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
-		}
-		else {
+
+		if (!productId.equals(product.getId()) || result.hasErrors()) {
+
+			System.out.println("errores: " + result.getAllErrors());
+			response = new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
+		} else {
 
 			ProductDto productDto = productService.updateProduct(product);
-			return new ResponseEntity<ProductDto>(productDto, HttpStatus.ACCEPTED);
+			response = new ResponseEntity<ProductDto>(productDto, HttpStatus.ACCEPTED);
 		}
+
+		return response;
 	}
-	
+
 }
